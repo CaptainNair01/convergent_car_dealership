@@ -1,5 +1,6 @@
-// app/car/[id]/page.tsx
 import type { Metadata } from "next";
+import AddToCartButton from "./AddToCartButton";
+import Link from "next/link";
 
 interface Car {
   id: number;
@@ -13,7 +14,7 @@ interface Car {
   transmission: string;
   color: string;
   vin: string;
-  image?: string; // <-- "image" property from API
+  image?: string;
   description: string;
 }
 
@@ -26,32 +27,28 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 export default async function CarDetailPage({ params }: { params: { id: string } }) {
   const { id } = params;
 
-  // Fetch data on the server
   const res = await fetch(`https://dealership.naman.zip/car/${id}`, {
-    cache: "no-store", // or use defaults if you'd like caching
+    cache: "no-store",
   });
 
   if (!res.ok) {
     return (
       <div className="p-4">
         <p className="text-red-500">Car not found or error fetching data.</p>
-        <a href="/" className="inline-block text-indigo-600 mt-4 underline">
+        <Link href="/" className="inline-block text-indigo-600 mt-4 underline">
           Back to Home
-        </a>
+        </Link>
       </div>
     );
   }
 
   const data = await res.json();
-  console.log("Server fetched car data:", data);
-
-  // If "image" might be relative, fix it up
   let finalImage = data.image ?? "";
+  
   if (finalImage && !finalImage.startsWith("http")) {
     finalImage = `https://dealership.naman.zip${finalImage}`;
   }
 
-  // Build the "car" object with the corrected image
   const car: Car = { ...data, image: finalImage };
 
   return (
@@ -105,12 +102,16 @@ export default async function CarDetailPage({ params }: { params: { id: string }
             <strong>Description:</strong> {car.description}
           </p>
 
-          <a
-            href="/"
-            className="inline-block mt-6 bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition-colors"
-          >
-            Back to Home
-          </a>
+          {/* Buttons row with spacing */}
+          <div className="mt-6 flex items-center gap-4">
+            <AddToCartButton car={car} />
+            <Link
+              href="/"
+              className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition-colors"
+            >
+              Back to Home
+            </Link>
+          </div>
         </div>
       </div>
     </div>
