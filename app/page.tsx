@@ -1,101 +1,114 @@
-import Image from "next/image";
+// app/page.tsx
+"use client";
 
-export default function Home() {
+import { useEffect, useState } from "react";
+
+interface Car {
+  id: number;
+  make: string;
+  model: string;
+  year: number;
+  price: number;
+  image: string; // <-- API returns image under "image"
+}
+
+export default function HomePage() {
+  const [cars, setCars] = useState<Car[]>([]);
+  const [filteredCars, setFilteredCars] = useState<Car[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function getCars() {
+      try {
+        const res = await fetch(
+          "https://dealership.naman.zip/cars/sort?key=price&direction=asc"
+        );
+        if (!res.ok) throw new Error("Failed to fetch cars");
+        const data = await res.json();
+        setCars(data);
+        setFilteredCars(data);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    getCars();
+  }, []);
+
+  // Filter by make/model/year whenever searchTerm changes
+  useEffect(() => {
+    const term = searchTerm.toLowerCase();
+    const results = cars.filter((car) => {
+      const make = car.make.toLowerCase();
+      const model = car.model.toLowerCase();
+      const year = car.year.toString();
+      return make.includes(term) || model.includes(term) || year.includes(term);
+    });
+    setFilteredCars(results);
+  }, [searchTerm, cars]);
+
+  if (loading) {
+    return <p className="text-center mt-8">Loading cars...</p>;
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div>
+      <h2 className="text-3xl font-bold mb-6 text-indigo-800">
+        Available Cars (Lowest Price First)
+      </h2>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
+      {/* Search Bar */}
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search by make, model, or year..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full md:w-2/3 px-4 py-2 rounded border focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-500"
+          style={{ backgroundColor: "#EEF2FF" }} // Light indigo background
+        />
+      </div>
+
+      {filteredCars.length === 0 && (
+        <p className="text-gray-600">No cars match your search.</p>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {filteredCars.map((car) => (
           <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            key={car.id}
+            href={`/car/${car.id}`}
+            className="block bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow transform hover:scale-[1.01]"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
+            <div className="w-full h-48 overflow-hidden">
+              {/* 
+                Use the "image" property directly. 
+                If your data is sometimes relative, you can check:
+                  if (!car.image.startsWith('http')) { ... }
+                But if it's always a valid URL, just use car.image.
+              */}
+              <img
+                src={car.image}
+                alt={`${car.make} ${car.model}`}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="p-4">
+              <h3 className="text-lg font-semibold mb-1 text-gray-800">
+                {car.year} {car.make} {car.model}
+              </h3>
+              <p className="text-gray-700">
+                Price:{" "}
+                <span className="font-medium text-indigo-600">
+                  ${car.price}
+                </span>
+              </p>
+            </div>
           </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        ))}
+      </div>
     </div>
   );
 }
